@@ -14,6 +14,7 @@
     <nav class="navbar bg-primary shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
+                <!--img src="/images/logo.png" alt="Pet Me" width="30" height="24"-->
                 <span class="text-white">Pet Me</span>
             </a>
         </div>
@@ -104,6 +105,30 @@
                 </table>
             </div>
 
+            <div id="lostPetsContent" class="d-none">
+                <h3 id="lostPetsTitle" class="mb-3">Lost Pets</h3>
+                <table id="lostPetsTable" class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Image</th>
+                            <th>Owner</th>
+                            <th>Contact</th>
+                            <th>Address</th>
+                            <th>Breed</th>
+                            <th>Description</th>
+                            <th>Is Found?</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
             <div id="usersContent" class="d-none">
                 <h3 id="usersContentTitle" class="mb-3">Users</h3>
                 <table id="usersTable" class="table table-sm table-bordered">
@@ -171,6 +196,7 @@
                 path = 'adopted_pets';
                 $('#adoptedPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'lost_pets') {
+                path = 'lost_pets';
                 $('#lostPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'pet_memorials') {
                 $('#petMemorialsContent').removeClass('d-none').addClass('d-block');
@@ -223,9 +249,11 @@
         function populateTables(data) {
             const petTableBody = $('#petsTable tbody');
             const adoptedTableBody = $('#adoptedPetsTable tbody');
+            const lostTableBody = $('#lostPetsTable tbody');
             const userTableBody = $('#usersTable tbody');
             petTableBody.empty(); // Clear previous data
             adoptedTableBody.empty(); // Clear previous data
+            lostTableBody.empty(); // Clear previous data
             userTableBody.empty(); // Clear previous data
 
             // Loop through the data and create table rows
@@ -234,6 +262,7 @@
                     const rowData = data[key];
                     const petRow = petTableBody[0].insertRow();
                     const adoptedRow = adoptedTableBody[0].insertRow();
+                    const lostRow = lostTableBody[0].insertRow();
                     const userRow = userTableBody[0].insertRow();
 
                     // Populate table rows based on the page parameter
@@ -241,6 +270,8 @@
                         populateRegisteredPetsTableRow(petRow, rowData, key);
                     } else if (currentPage === 'adopted_pets') {
                         populateAdoptedPetsTableRow(adoptedRow, rowData, key);
+                    } else if (currentPage === 'lost_pets') {
+                        populateLostPetsTableRow(lostRow, rowData, key);
                     } else if (currentPage === 'users') {
                         populateUsersTableRow(userRow, rowData, key);
                     }
@@ -332,6 +363,44 @@
             row.insertCell(11).appendChild(approveButton);
         }
 
+        // Function to populate a table row with data for lost pets
+        function populateLostPetsTableRow(row, rowData, key) {
+
+            row.insertCell(0).textContent = rowData.name;
+            row.insertCell(1).textContent = rowData.age;
+            row.insertCell(2).textContent = rowData.gender;
+            row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
+            const ownerCell = row.insertCell(4);
+            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
+                const userData = userSnapshot.val();
+                if (userData) {
+                    ownerCell.textContent = userData.name;
+                } else {
+                    ownerCell.textContent = 'Unknown';
+                }
+            });
+            row.insertCell(5).textContent = rowData.contact;
+            row.insertCell(6).textContent = rowData.address;
+            row.insertCell(7).textContent = rowData.breed;
+            row.insertCell(8).textContent = rowData.description;
+            row.insertCell(9).textContent = rowData.lost ? 'Lost' : 'Found';
+            row.insertCell(10).textContent = rowData.approved ? 'Approved' : 'Unapproved';
+
+            const approveButton = document.createElement('button');
+            if (approveButton.textContent = rowData.approved) {
+                approveButton.className = 'btn btn-sm btn-danger';
+                approveButton.textContent = 'Unapprove';
+            } else {
+                approveButton.className = 'btn btn-sm btn-primary';
+                approveButton.textContent = 'Approve';
+            }
+            approveButton.addEventListener('click', function() {
+                const newApproveStatus = !rowData.approved;
+                dataRef.child(key).update({ approved: newApproveStatus });
+            });
+            row.insertCell(11).appendChild(approveButton);
+        }
+
         // Function to populate a table row with data
         function populateUsersTableRow(row, rowData, key) {
 
@@ -347,6 +416,8 @@
                 $('#petsTable').DataTable();
             } else if (currentPage === 'adopted_pets') {
                 $('#adoptedPetsTable').DataTable();
+            } else if (currentPage === 'lost_pets') {
+                $('#lostPetsTable').DataTable();
             } else if (currentPage === 'users') {
                 $('#usersTable').DataTable();
             }
