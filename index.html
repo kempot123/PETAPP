@@ -69,6 +69,8 @@
                             <th>Type</th>
                             <th>Owner</th>
                             <th>Image</th>
+                            <th>Address</th>
+                            <th>Contact</th>
                             <th>Breed</th>
                             <th>Is Kapon?</th>
                             <th>Is Vaccinated?</th>
@@ -129,6 +131,25 @@
                 </table>
             </div>
 
+            <div id="memorialPetsContent" class="d-none">
+                <h3 id="memorialPetsTitle" class="mb-3">Memorial Pets</h3>
+                <table id="memorialPetsTable" class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Owner</th>
+                            <th>Birth Year</th>
+                            <th>Death Year</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
             <div id="usersContent" class="d-none">
                 <h3 id="usersContentTitle" class="mb-3">Users</h3>
                 <table id="usersTable" class="table table-sm table-bordered">
@@ -156,6 +177,27 @@
     <script src="https://cdn.datatables.net/v/bs5/dt-2.0.0/b-3.0.0/b-html5-3.0.0/datatables.min.js"></script>
 
     <script>
+        class Notification {
+            constructor(id, userId, message, isRead, timestamp, toId, userTo) {
+                this.id = id;
+                this.userId = userId;
+                this.message = message;
+                this.read = isRead;
+                this.timestamp = timestamp;
+                this.toId = toId;
+            }
+        }
+
+        const StatusEnum = {
+            PET_ADMIN_APPROVED: "PET_ADMIN_APPROVED",
+            PET_ADMIN_UNAPPROVED: "PET_ADMIN_UNAPPROVED",
+            LOST_FOUND_ADMIN_APPROVED: "LOST_FOUND_ADMIN_APPROVED",
+            LOST_FOUND_ADMIN_UNAPPROVED: "LOST_FOUND_ADMIN_UNAPPROVED",
+            MEMORIAL_ADMIN_APPROVED: "MEMORIAL_ADMIN_APPROVED",
+            MEMORIAL_ADMIN_UNAPPROVED: "MEMORIAL_ADMIN_UNAPPROVED",
+            ADOPTION_ADMIN_APPROVED: "ADOPTION_ADMIN_APPROVED",
+            ADOPTION_ADMIN_UNAPPROVED: "ADOPTION_ADMIN_UNAPPROVED"
+        };
 
         // Firebase configuration
         const firebaseConfig = {
@@ -188,20 +230,21 @@
             // Call function to hide all content divs
             hideAllContentDivs();
 
-            let path = '';
+            let path = 'TEST/';
             if (currentPage == 'registered_pets') {
-                path = 'pets';
+                path += 'pets';
                 $('#registeredPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'adopted_pets') {
-                path = 'adopted_pets';
+                path += 'adopted_pets';
                 $('#adoptedPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'lost_pets') {
-                path = 'lost_pets';
+                path += 'lost_pets';
                 $('#lostPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'pet_memorials') {
-                $('#petMemorialsContent').removeClass('d-none').addClass('d-block');
+                path += 'memorials';
+                $('#memorialPetsContent').removeClass('d-none').addClass('d-block');
             } else if (currentPage == 'users') {
-                path = 'users';
+                path += 'users';
                 $('#usersContent').removeClass('d-none').addClass('d-block');
             }
 
@@ -247,13 +290,16 @@
 
         // Function to populate tables based on page parameter
         function populateTables(data) {
+            console.log(data);
             const petTableBody = $('#petsTable tbody');
             const adoptedTableBody = $('#adoptedPetsTable tbody');
             const lostTableBody = $('#lostPetsTable tbody');
+            const memorialTableBody = $('#memorialPetsTable tbody');
             const userTableBody = $('#usersTable tbody');
             petTableBody.empty(); // Clear previous data
             adoptedTableBody.empty(); // Clear previous data
             lostTableBody.empty(); // Clear previous data
+            memorialTableBody.empty(); // Clear previous data
             userTableBody.empty(); // Clear previous data
 
             // Loop through the data and create table rows
@@ -263,6 +309,7 @@
                     const petRow = petTableBody[0].insertRow();
                     const adoptedRow = adoptedTableBody[0].insertRow();
                     const lostRow = lostTableBody[0].insertRow();
+                    const memorialRow = memorialTableBody[0].insertRow();
                     const userRow = userTableBody[0].insertRow();
 
                     // Populate table rows based on the page parameter
@@ -272,6 +319,8 @@
                         populateAdoptedPetsTableRow(adoptedRow, rowData, key);
                     } else if (currentPage === 'lost_pets') {
                         populateLostPetsTableRow(lostRow, rowData, key);
+                    } else if (currentPage === 'pet_memorials') {
+                        populateMemorialPetsTableRow(memorialRow, rowData, key);
                     } else if (currentPage === 'users') {
                         populateUsersTableRow(userRow, rowData, key);
                     }
@@ -282,13 +331,117 @@
             updateTable();
         }
 
+        // Function to get current timestamp in milliseconds
+        function getCurrentTimestamp() {
+            // Get current date and time
+            const currentDate = new Date();
+            // Get timestamp in milliseconds since Unix epoch
+            return currentDate.getTime().toString();
+        }
+
+        function addNotification(status, toId) {
+            const notification = new Notification(
+                null,
+                toId,
+                status,
+                false,
+                getCurrentTimestamp(),
+                toId
+            );
+
+            return database.ref('TEST/notifs').push(notification)
+                .then((newNotificationRef) => {
+                    notification.id = newNotificationRef.key;
+                    // Update the notification's ID in the database
+                    return newNotificationRef.update({ id: notification.id })
+                        .then(() => {
+                            // Return the notification ID
+                            return notification.id;
+                        });
+                });
+        }
+
+        function updateNotification(id, status, toId) {
+            const notification = new Notification(
+                id,
+                toId,
+                status,
+                false,
+                getCurrentTimestamp(),
+                toId
+            );
+
+            return database.ref('TEST/notifs/' + id).update(notification)
+                .then(() => {
+                });
+        }
+
+        function handleApprovalStatus(key, rowData, adminApproved, adminUnapproved) {
+            const id = key;
+            const newApproveStatus = !rowData.approved;
+
+            let notifId = "";
+            if (rowData.notificationId != null) {
+                 notifId = rowData.notificationId;
+            }
+
+            var status;
+            if (newApproveStatus == true) {
+                status = adminApproved;
+
+                addNotification(status, rowData.userId)
+                .then((notifId) => {
+                    dataRef.child(id).update({ approved: newApproveStatus, notificationId: notifId });
+                })
+                .catch((error) => {
+                }); 
+            } else {
+                status = adminUnapproved;
+                updateNotification(notifId, status, rowData.userId)
+                .then(() => {
+                    dataRef.child(id).update({ approved: newApproveStatus});
+                })
+                .catch((error) => {
+                }); 
+            }
+        }
+
+        function handleApprovalStatusAdoption(key, rowData, adminApproved, adminUnapproved) {
+            const id = key;
+            const newApproveStatus = !rowData.approved;
+
+            let notifId = "";
+            if (rowData.notificationId != null) {
+                 notifId = rowData.notificationId;
+            }
+
+            var status;
+            if (newApproveStatus == true) {
+                status = adminApproved;
+
+                addNotification(status, rowData.userId)
+                .then((notifId) => {
+                    dataRef.child(id).update({ approved: newApproveStatus, notifIdAdoption: notifId });
+                })
+                .catch((error) => {
+                }); 
+            } else {
+                status = adminUnapproved;
+                updateNotification(notifId, status, rowData.userId)
+                .then(() => {
+                    dataRef.child(id).update({ approved: newApproveStatus});
+                })
+                .catch((error) => {
+                }); 
+            }
+        }
+
         // Function to populate a table row with data
         function populateRegisteredPetsTableRow(row, rowData, key) {
-
             row.insertCell(0).textContent = rowData.name;
             row.insertCell(1).textContent = rowData.type;
             const ownerCell = row.insertCell(2);
-            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -297,10 +450,12 @@
                 }
             });
             row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
-            row.insertCell(4).textContent = rowData.breed;
-            row.insertCell(5).textContent = rowData.kapon ? 'Yes' : 'No';
-            row.insertCell(6).textContent = rowData.vaccinated ? 'Yes' : 'No';
-            row.insertCell(7).textContent = rowData.approved ? 'Approved' : 'Unapproved';
+            row.insertCell(4).textContent = rowData.address;
+            row.insertCell(5).textContent = rowData.contact;
+            row.insertCell(6).textContent = rowData.breed;
+            row.insertCell(7).textContent = rowData.kapon ? 'Yes' : 'No';
+            row.insertCell(8).textContent = rowData.vaccinated ? 'Yes' : 'No';
+            row.insertCell(9).textContent = rowData.approved ? 'Approved' : 'Unapproved';
 
             const approveButton = document.createElement('button');
             if (approveButton.textContent = rowData.approved) {
@@ -311,10 +466,9 @@
                 approveButton.textContent = 'Approve';
             }
             approveButton.addEventListener('click', function() {
-                const newApproveStatus = !rowData.approved;
-                dataRef.child(key).update({ approved: newApproveStatus });
+                handleApprovalStatus(key, rowData, StatusEnum.PET_ADMIN_APPROVED, StatusEnum.PET_ADMIN_UNAPPROVED);           
             });
-            row.insertCell(8).appendChild(approveButton);
+            row.insertCell(10).appendChild(approveButton);
         }
 
         // Function to populate a table row with data for adopted pets
@@ -325,7 +479,7 @@
             row.insertCell(2).textContent = rowData.gender;
             row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
             const ownerCell = row.insertCell(4);
-            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -334,7 +488,7 @@
                 }
             });
             const fosterCell = row.insertCell(5);
-            database.ref('users/' + rowData.fosterId).once('value').then(function(userSnapshot) {
+            database.ref('TEST/users/' + rowData.fosterId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     fosterCell.textContent = userData.name;
@@ -357,8 +511,7 @@
                 approveButton.textContent = 'Approve';
             }
             approveButton.addEventListener('click', function() {
-                const newApproveStatus = !rowData.approved;
-                dataRef.child(key).update({ approved: newApproveStatus });
+                handleApprovalStatusAdoption(key, rowData, StatusEnum.ADOPTION_ADMIN_APPROVED, StatusEnum.ADOPTION_ADMIN_UNAPPROVED);           
             });
             row.insertCell(11).appendChild(approveButton);
         }
@@ -371,7 +524,7 @@
             row.insertCell(2).textContent = rowData.gender;
             row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
             const ownerCell = row.insertCell(4);
-            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -395,10 +548,40 @@
                 approveButton.textContent = 'Approve';
             }
             approveButton.addEventListener('click', function() {
-                const newApproveStatus = !rowData.approved;
-                dataRef.child(key).update({ approved: newApproveStatus });
+                handleApprovalStatus(key, rowData, StatusEnum.LOST_FOUND_ADMIN_APPROVED, StatusEnum.LOST_FOUND_ADMIN_UNAPPROVED);           
             });
             row.insertCell(11).appendChild(approveButton);
+        }
+
+        // Function to populate a table row with data
+        function populateMemorialPetsTableRow(row, rowData, key) {
+            row.insertCell(0).textContent = rowData.name;
+            const ownerCell = row.insertCell(1);
+            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
+                const userData = userSnapshot.val();
+                if (userData) {
+                    ownerCell.textContent = userData.name;
+                } else {
+                    ownerCell.textContent = 'Unknown';
+                }
+            });
+            row.insertCell(2).textContent = rowData.birthYear;
+            row.insertCell(3).textContent = rowData.deathYear;
+            row.insertCell(4).textContent = rowData.post;
+            row.insertCell(5).textContent = rowData.approved ? 'Approved' : 'Unapproved';
+
+            const approveButton = document.createElement('button');
+            if (approveButton.textContent = rowData.approved) {
+                approveButton.className = 'btn btn-sm btn-danger';
+                approveButton.textContent = 'Unapprove';
+            } else {
+                approveButton.className = 'btn btn-sm btn-primary';
+                approveButton.textContent = 'Approve';
+            }
+            approveButton.addEventListener('click', function() {
+                handleApprovalStatus(key, rowData, StatusEnum.MEMORIAL_ADMIN_APPROVED, StatusEnum.MEMORIAL_ADMIN_UNAPPROVED);           
+            });
+            row.insertCell(6).appendChild(approveButton);
         }
 
         // Function to populate a table row with data
@@ -418,6 +601,8 @@
                 $('#adoptedPetsTable').DataTable();
             } else if (currentPage === 'lost_pets') {
                 $('#lostPetsTable').DataTable();
+            } else if (currentPage === 'pet_memorials') {
+                $('#memorialPetsTable').DataTable();
             } else if (currentPage === 'users') {
                 $('#usersTable').DataTable();
             }
