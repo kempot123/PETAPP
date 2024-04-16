@@ -230,7 +230,7 @@
             // Call function to hide all content divs
             hideAllContentDivs();
 
-            let path = 'TEST/';
+            let path = '';
             if (currentPage == 'registered_pets') {
                 path += 'pets';
                 $('#registeredPetsContent').removeClass('d-none').addClass('d-block');
@@ -349,7 +349,7 @@
                 toId
             );
 
-            return database.ref('TEST/notifs').push(notification)
+            return database.ref('notifs').push(notification)
                 .then((newNotificationRef) => {
                     notification.id = newNotificationRef.key;
                     // Update the notification's ID in the database
@@ -371,7 +371,7 @@
                 toId
             );
 
-            return database.ref('TEST/notifs/' + id).update(notification)
+            return database.ref('notifs/' + id).update(notification)
                 .then(() => {
                 });
         }
@@ -441,7 +441,7 @@
             row.insertCell(0).textContent = rowData.name;
             row.insertCell(1).textContent = rowData.type;
             const ownerCell = row.insertCell(2);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -479,7 +479,7 @@
             row.insertCell(2).textContent = rowData.gender;
             row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
             const ownerCell = row.insertCell(4);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -488,7 +488,7 @@
                 }
             });
             const fosterCell = row.insertCell(5);
-            database.ref('TEST/users/' + rowData.fosterId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + rowData.fosterId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     fosterCell.textContent = userData.name;
@@ -524,7 +524,7 @@
             row.insertCell(2).textContent = rowData.gender;
             row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
             const ownerCell = row.insertCell(4);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
@@ -557,7 +557,7 @@
         function populateMemorialPetsTableRow(row, rowData, key) {
             row.insertCell(0).textContent = rowData.name;
             const ownerCell = row.insertCell(1);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + rowData.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     ownerCell.textContent = userData.name;
