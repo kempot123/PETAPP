@@ -108,29 +108,6 @@
                     $('#petImg').attr('src', data.imageUrl);
                 }
             });
-        
-            
-            
-/*
-            row.insertCell(0).textContent = rowData.name;
-            row.insertCell(1).textContent = rowData.type;
-            const ownerCell = row.insertCell(2);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
-                const userData = userSnapshot.val();
-                if (userData) {
-                    ownerCell.textContent = userData.name;
-                } else {
-                    ownerCell.textContent = 'Unknown';
-                }
-            });
-            row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
-            row.insertCell(4).textContent = rowData.address;
-            row.insertCell(5).textContent = rowData.contact;
-            row.insertCell(6).textContent = rowData.breed;
-            row.insertCell(7).textContent = rowData.kapon ? 'Yes' : 'No';
-            row.insertCell(8).textContent = rowData.vaccinated ? 'Yes' : 'No';
-            row.insertCell(9).textContent = rowData.approved ? 'Approved' : 'Unapproved';
-            */
         }
 
         // Function to hide all content divs
@@ -145,55 +122,6 @@
                 const data = snapshot.val();
                 callback(data);
             });
-        }
-
-        // Function to populate tables based on page parameter
-        function populateTables(data) {
-            const petTableBody = $('#petsTable tbody');
-            petTableBody.empty(); // Clear previous data
-
-            const rowData = data;
-            const petRow = petTableBody[0].insertRow();
-
-            populateRegisteredPetsTableRow(petRow, rowData);
-            updateTable();
-        }
-
-        // Function to get current timestamp in milliseconds
-        function getCurrentTimestamp() {
-            // Get current date and time
-            const currentDate = new Date();
-            // Get timestamp in milliseconds since Unix epoch
-            return currentDate.getTime().toString();
-        }
-
-
-        // Function to populate a table row with data
-        function populateRegisteredPetsTableRow(row, rowData) {
-            row.insertCell(0).textContent = rowData.name;
-            row.insertCell(1).textContent = rowData.type;
-            const ownerCell = row.insertCell(2);
-            database.ref('TEST/users/' + rowData.userId).once('value').then(function(userSnapshot) {
-                const userData = userSnapshot.val();
-                if (userData) {
-                    ownerCell.textContent = userData.name;
-                } else {
-                    ownerCell.textContent = 'Unknown';
-                }
-            });
-            row.insertCell(3).innerHTML = `<img src="${rowData.imageUrl}" alt="Pet Image" style="max-width: 100px; max-height: 100px;">`;
-            row.insertCell(4).textContent = rowData.address;
-            row.insertCell(5).textContent = rowData.contact;
-            row.insertCell(6).textContent = rowData.breed;
-            row.insertCell(7).textContent = rowData.kapon ? 'Yes' : 'No';
-            row.insertCell(8).textContent = rowData.vaccinated ? 'Yes' : 'No';
-            row.insertCell(9).textContent = rowData.approved ? 'Approved' : 'Unapproved';
-        }
-
-        // Function to update the table
-        function updateTable() {
-            $('#petsTable').DataTable();
-            
         }
 
     </script>
