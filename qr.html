@@ -82,7 +82,7 @@
             // Call function to hide all content divs
             hideAllContentDivs();
 
-            let path = 'TEST/';
+            let path = '';
             path += 'pets/';
             path += currentPage;
             $('#petsContent').removeClass('d-none').addClass('d-block');
@@ -93,7 +93,7 @@
         });
 
         function updateCard(data) {
-            database.ref('TEST/users/' + data.userId).once('value').then(function(userSnapshot) {
+            database.ref('users/' + data.userId).once('value').then(function(userSnapshot) {
                 const userData = userSnapshot.val();
                 if (userData) {
                     $('#petDetails').html(
