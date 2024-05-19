@@ -406,36 +406,6 @@
             }
         }
 
-        function handleApprovalStatusAdoption(key, rowData, adminApproved, adminUnapproved) {
-            const id = key;
-            const newApproveStatus = !rowData.approved;
-
-            let notifId = "";
-            if (rowData.notificationId != null) {
-                 notifId = rowData.notificationId;
-            }
-
-            var status;
-            if (newApproveStatus == true) {
-                status = adminApproved;
-
-                addNotification(status, rowData.userId)
-                .then((notifId) => {
-                    dataRef.child(id).update({ approved: newApproveStatus, notifIdAdoption: notifId });
-                })
-                .catch((error) => {
-                }); 
-            } else {
-                status = adminUnapproved;
-                updateNotification(notifId, status, rowData.userId)
-                .then(() => {
-                    dataRef.child(id).update({ approved: newApproveStatus});
-                })
-                .catch((error) => {
-                }); 
-            }
-        }
-
         // Function to populate a table row with data
         function populateRegisteredPetsTableRow(row, rowData, key) {
             row.insertCell(0).textContent = rowData.name;
@@ -511,7 +481,7 @@
                 approveButton.textContent = 'Approve';
             }
             approveButton.addEventListener('click', function() {
-                handleApprovalStatusAdoption(key, rowData, StatusEnum.ADOPTION_ADMIN_APPROVED, StatusEnum.ADOPTION_ADMIN_UNAPPROVED);           
+                handleApprovalStatus(key, rowData, StatusEnum.ADOPTION_ADMIN_APPROVED, StatusEnum.ADOPTION_ADMIN_UNAPPROVED);           
             });
             row.insertCell(11).appendChild(approveButton);
         }
