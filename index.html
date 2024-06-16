@@ -58,11 +58,11 @@
 
         </div>
         <!--Content-->
-        <div class="col-md p-5 mx-5">
+        <div class="col-md-9 p-5 mx-5">
 
-            <div id="registeredPetsContent" class="d-none">
+            <div id="registeredPetsContent" class="d-none table-responsive">
                 <h3 id="registeredPetsTitle" class="mb-3">Registered Pets</h3>
-                <table id="petsTable" class="table table-sm table-bordered">
+                <table id="petsTable" class="table table-sm table-bordered" style="font-size: 12px;">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -76,6 +76,7 @@
                             <th>Is Vaccinated?</th>
                             <th>Status</th>
                             <th>Action</th>
+                            <th>Created At</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,9 +84,9 @@
                 </table>
             </div>
 
-            <div id="adoptedPetsContent" class="d-none">
+            <div id="adoptedPetsContent" class="d-none table-responsive">
                 <h3 id="adoptedPetsTitle" class="mb-3">Adopted Pets</h3>
-                <table id="adoptedPetsTable" class="table table-sm table-bordered">
+                <table id="adoptedPetsTable" class="table table-sm table-bordered" style="font-size: 12px;">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -100,6 +101,7 @@
                             <th>Is Adopted?</th>
                             <th>Status</th>
                             <th>Action</th>
+                            <th>Created At</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -107,9 +109,9 @@
                 </table>
             </div>
 
-            <div id="lostPetsContent" class="d-none">
+            <div id="lostPetsContent" class="d-none table-responsive">
                 <h3 id="lostPetsTitle" class="mb-3">Lost Pets</h3>
-                <table id="lostPetsTable" class="table table-sm table-bordered">
+                <table id="lostPetsTable" class="table table-sm table-bordered" style="font-size: 12px;">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -124,6 +126,7 @@
                             <th>Is Found?</th>
                             <th>Status</th>
                             <th>Action</th>
+                            <th>Created At</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -131,9 +134,9 @@
                 </table>
             </div>
 
-            <div id="memorialPetsContent" class="d-none">
+            <div id="memorialPetsContent" class="d-none table-responsive">
                 <h3 id="memorialPetsTitle" class="mb-3">Memorial Pets</h3>
-                <table id="memorialPetsTable" class="table table-sm table-bordered">
+                <table id="memorialPetsTable" class="table table-sm table-bordered" style="font-size: 12px;">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -143,6 +146,7 @@
                             <th>Message</th>
                             <th>Status</th>
                             <th>Action</th>
+                            <th>Created At</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -150,12 +154,14 @@
                 </table>
             </div>
 
-            <div id="usersContent" class="d-none">
+            <div id="usersContent" class="d-none table-responsive">
                 <h3 id="usersContentTitle" class="mb-3">Users</h3>
-                <table id="usersTable" class="table table-sm table-bordered">
+                <table id="usersTable" class="table table-sm table-bordered" style="font-size: 12px;">
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Age</th>
+                            <th>Birthday</th>
                             <th>Email Address</th>
                             <th>Phone</th>
                             <th>Username</th>
@@ -248,8 +254,13 @@
                 $('#usersContent').removeClass('d-none').addClass('d-block');
             }
 
-            fetchData(path, function(data) {
-                populateTables(data);
+            fetchData(path, function(sortedData) {
+                if (sortedData) {
+                    console.log(sortedData);
+                    populateTables(sortedData);
+                } else {
+                    console.log('No data available');
+                }
             });
         });
 
@@ -281,16 +292,45 @@
 
         // Function to retrieve data from Firebase
         function fetchData(path, callback) {
-            dataRef = database.ref(path);
+            const dataRef = database.ref(path);
             dataRef.on('value', function(snapshot) {
                 const data = snapshot.val();
-                callback(data);
+                if (data) {
+                    const sortedData = sortDataByPushIDTimestamp(data);
+                    callback(sortedData);
+                } else {
+                    callback(null);
+                }
             });
         }
 
+        function extractTimestampFromPushID(pushID) {
+            const PUSH_CHARS = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+            let timestamp = 0;
+
+            for (let i = 0; i < 8; i++) {
+                timestamp = timestamp * 64 + PUSH_CHARS.indexOf(pushID.charAt(i + 1));
+            }
+
+            return timestamp/64;
+        }
+
+        function sortDataByPushIDTimestamp(data) {
+            const entries = Object.entries(data);
+
+            const sortedData = entries.map(([key, value]) => {
+                const timestamp = extractTimestampFromPushID(key);
+                return { key, value: { ...value, timestamp } }; // Include timestamp within the value object
+            });
+
+            sortedData.sort((a, b) => b.value.timestamp - a.value.timestamp); // Sort in descending order based on timestamp
+
+            return sortedData;
+        }
+
+
         // Function to populate tables based on page parameter
         function populateTables(data) {
-            console.log(data);
             const petTableBody = $('#petsTable tbody');
             const adoptedTableBody = $('#adoptedPetsTable tbody');
             const lostTableBody = $('#lostPetsTable tbody');
@@ -303,28 +343,26 @@
             userTableBody.empty(); // Clear previous data
 
             // Loop through the data and create table rows
-            for (let key in data) {
-                if (data.hasOwnProperty(key)) {
-                    const rowData = data[key];
-                    const petRow = petTableBody[0].insertRow();
-                    const adoptedRow = adoptedTableBody[0].insertRow();
-                    const lostRow = lostTableBody[0].insertRow();
-                    const memorialRow = memorialTableBody[0].insertRow();
-                    const userRow = userTableBody[0].insertRow();
+            for (let key1 in data) {
+                const key = data[key1].key;
+                const rowData = data[key1].value;
+                const petRow = petTableBody[0].insertRow();
+                const adoptedRow = adoptedTableBody[0].insertRow();
+                const lostRow = lostTableBody[0].insertRow();
+                const memorialRow = memorialTableBody[0].insertRow();
+                const userRow = userTableBody[0].insertRow();
 
-                    // Populate table rows based on the page parameter
-                    if (currentPage === 'registered_pets') {
-                        populateRegisteredPetsTableRow(petRow, rowData, key);
-                    } else if (currentPage === 'adopted_pets') {
-                        populateAdoptedPetsTableRow(adoptedRow, rowData, key);
-                    } else if (currentPage === 'lost_pets') {
-                        populateLostPetsTableRow(lostRow, rowData, key);
-                    } else if (currentPage === 'pet_memorials') {
-                        populateMemorialPetsTableRow(memorialRow, rowData, key);
-                    } else if (currentPage === 'users') {
-                        populateUsersTableRow(userRow, rowData, key);
-                    }
-                    // Add more conditions for other pages if needed
+                // Populate table rows based on the page parameter
+                if (currentPage === 'registered_pets') {
+                    populateRegisteredPetsTableRow(petRow, rowData, key);
+                } else if (currentPage === 'adopted_pets') {
+                    populateAdoptedPetsTableRow(adoptedRow, rowData, key);
+                } else if (currentPage === 'lost_pets') {
+                    populateLostPetsTableRow(lostRow, rowData, key);
+                } else if (currentPage === 'pet_memorials') {
+                    populateMemorialPetsTableRow(memorialRow, rowData, key);
+                } else if (currentPage === 'users') {
+                    populateUsersTableRow(userRow, rowData, key);
                 }
             }
 
@@ -406,6 +444,22 @@
             }
         }
 
+        function formatDate(timestamp) {
+            // Convert timestamp to milliseconds
+            const date = new Date(timestamp);
+            // Extract date components
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            // Format the date as desired (e.g., YYYY-MM-DD HH:MM:SS)
+            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            return formattedDate;
+        }
+
+
         // Function to populate a table row with data
         function populateRegisteredPetsTableRow(row, rowData, key) {
             row.insertCell(0).textContent = rowData.name;
@@ -439,6 +493,7 @@
                 handleApprovalStatus(key, rowData, StatusEnum.PET_ADMIN_APPROVED, StatusEnum.PET_ADMIN_UNAPPROVED);           
             });
             row.insertCell(10).appendChild(approveButton);
+            row.insertCell(11).textContent = formatDate(rowData.timestamp);
         }
 
         // Function to populate a table row with data for adopted pets
@@ -484,6 +539,7 @@
                 handleApprovalStatus(key, rowData, StatusEnum.ADOPTION_ADMIN_APPROVED, StatusEnum.ADOPTION_ADMIN_UNAPPROVED);           
             });
             row.insertCell(11).appendChild(approveButton);
+            row.insertCell(12).textContent = formatDate(rowData.timestamp);
         }
 
         // Function to populate a table row with data for lost pets
@@ -521,6 +577,7 @@
                 handleApprovalStatus(key, rowData, StatusEnum.LOST_FOUND_ADMIN_APPROVED, StatusEnum.LOST_FOUND_ADMIN_UNAPPROVED);           
             });
             row.insertCell(11).appendChild(approveButton);
+            row.insertCell(12).textContent = formatDate(rowData.timestamp);
         }
 
         // Function to populate a table row with data
@@ -552,27 +609,38 @@
                 handleApprovalStatus(key, rowData, StatusEnum.MEMORIAL_ADMIN_APPROVED, StatusEnum.MEMORIAL_ADMIN_UNAPPROVED);           
             });
             row.insertCell(6).appendChild(approveButton);
+            row.insertCell(7).textContent = formatDate(rowData.timestamp);
         }
 
         // Function to populate a table row with data
         function populateUsersTableRow(row, rowData, key) {
 
             row.insertCell(0).textContent = rowData.name;
-            row.insertCell(1).textContent = rowData.emailAddress;
-            row.insertCell(2).textContent = rowData.phone;
-            row.insertCell(3).textContent = rowData.username;
+            row.insertCell(1).textContent = rowData.age;
+            row.insertCell(2).textContent = rowData.birthday;
+            row.insertCell(3).textContent = rowData.emailAddress;
+            row.insertCell(4).textContent = rowData.phone;
+            row.insertCell(5).textContent = rowData.username;
         }
 
         // Function to update the table
         function updateTable() {
             if (currentPage === 'registered_pets') {
-                $('#petsTable').DataTable();
+                $('#petsTable').DataTable({
+                    order: [[11, 'desc']]
+                });
             } else if (currentPage === 'adopted_pets') {
-                $('#adoptedPetsTable').DataTable();
+                $('#adoptedPetsTable').DataTable({
+                    order: [[12, 'desc']]
+                });
             } else if (currentPage === 'lost_pets') {
-                $('#lostPetsTable').DataTable();
+                $('#lostPetsTable').DataTable({
+                    order: [[12, 'desc']]
+                });
             } else if (currentPage === 'pet_memorials') {
-                $('#memorialPetsTable').DataTable();
+                $('#memorialPetsTable').DataTable({
+                    order: [[7, 'desc']]
+                });
             } else if (currentPage === 'users') {
                 $('#usersTable').DataTable();
             }
