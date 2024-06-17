@@ -292,7 +292,7 @@
 
         // Function to retrieve data from Firebase
         function fetchData(path, callback) {
-            const dataRef = database.ref(path);
+            dataRef = database.ref(path);
             dataRef.on('value', function(snapshot) {
                 const data = snapshot.val();
                 if (data) {
